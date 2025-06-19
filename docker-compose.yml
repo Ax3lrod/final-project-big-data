@@ -54,6 +54,8 @@ services:
   train:
     image: bitnami/spark:3.5.0
     container_name: train
+    ports:
+      - "8000:8000"
     volumes:
       - ./train:/app 
     working_dir: /app
