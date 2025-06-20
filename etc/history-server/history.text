@@ -6,3 +6,13 @@ SHOW TABLES FROM hive.default;
 DESCRIBE hive.default.steam_review;
 CREATE SCHEMA IF NOT EXISTS hive.default;\n\nCREATE TABLE hive.default.steam_review (\n    app_id VARCHAR,\n    app_name VARCHAR,\n    review_text VARCHAR,\n    review_score VARCHAR,\n    review_votes VARCHAR\n)\nWITH (\n    external_location = 's3a://lakehouse/clean/structured/',\n    format = 'CSV',\n    skip_header_line_count = 1\n)
 clear
+CREATE SCHEMA IF NOT EXISTS hive.default;\n\nCREATE TABLE hive.default.steam_review (\n    app_id VARCHAR,\n    app_name VARCHAR,\n    review_text VARCHAR,\n    review_score VARCHAR,\n    review_votes VARCHAR\n)\nWITH (\n    external_location = 's3a://lakehouse/clean/structured/',\n    format = 'CSV',\n    skip_header_line_count = 1\n)
+exit
+CREATE SCHEMA IF NOT EXISTS hive.default;\n\nCREATE TABLE hive.default.steam_review (\n    app_id VARCHAR,\n    app_name VARCHAR,\n    review_text VARCHAR,\n    review_score VARCHAR,\n    review_votes VARCHAR\n)\nWITH (\n    external_location = 's3a://lakehouse/clean/structured/',\n    format = 'CSV',\n    skip_header_line_count = 1\n)
+SELECT * FROM hive.default.steam_review\nLIMIT 10;
+exit
+show databases;
+SELECT * FROM hive.default.steam_review\nLIMIT 10;
+CREATE SCHEMA IF NOT EXISTS hive.default;\n\nCREATE TABLE hive.default.steam_review (\n    app_id VARCHAR,\n    app_name VARCHAR,\n    review_text VARCHAR,\n    review_score VARCHAR,\n    review_votes VARCHAR\n)\nWITH (\n    external_location = 's3a://lakehouse/clean/structured/',\n    format = 'CSV',\n    skip_header_line_count = 1\n);
+SELECT * FROM hive.default.steam_review\nLIMIT 10;
+exit

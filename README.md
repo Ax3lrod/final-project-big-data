@@ -15,23 +15,6 @@ Sistem ini dibangun untuk menghadapi tantangan manipulasi ulasan pengguna sepert
 Steam adalah platform distribusi game terbesar di dunia dengan lebih dari 132 juta pengguna aktif bulanan dan 143.000+ judul game hingga tahun 2025. Dengan jumlah review yang terus bertambah, review pengguna menjadi aspek krusial dalam proses pengambilan keputusan calon pembeli game. Namun, manipulasi review oleh bot, review palsu dari developer, hingga review bombing yang dilakukan secara masif masih menjadi tantangan besar.
 Untuk menjawab tantangan ini, prototipe ini menggunakan pendekatan pemrosesan data besar berbasis hybrid architecture dengan menggabungkan streaming dan batch processing, serta memanfaatkan teknologi modern seperti Kafka, MinIO, PySpark, Hive Metastore, dan Trino.
 
-#  Final Project Big Data - Sistem Deteksi Spam/Bot Review di Steam
-
-Kelompok B13
-- Fiorenza Adelia Nalle 5027231053
-- Harwinda 5027231079
-- Aryasatya Alaauddin 5027231082
-
-Final project ini bertujuan membangun prototipe sistem deteksi review game palsu di Steam menggunakan arsitektur hybrid (streaming + batching). 
-Sistem ini dibangun untuk menghadapi tantangan manipulasi ulasan pengguna seperti **review bombing**, **spam bot**, dan **fake reviews** yang umum ditemukan di platform distribusi digital terbesar, Steam.
-
-## Laporan Lengkap
-[Laporan Lengkap Proyek Steam Review Detection](https://docs.google.com/document/d/1cxuOzms_iEBbs4OWGHUQYS4syrmBDehZl9OaO72FQg8/edit?usp=sharing)
-
-## Latar Belakang
-Steam adalah platform distribusi game terbesar di dunia dengan lebih dari 132 juta pengguna aktif bulanan dan 143.000+ judul game hingga tahun 2025. Dengan jumlah review yang terus bertambah, review pengguna menjadi aspek krusial dalam proses pengambilan keputusan calon pembeli game. Namun, manipulasi review oleh bot, review palsu dari developer, hingga review bombing yang dilakukan secara masif masih menjadi tantangan besar.
-Untuk menjawab tantangan ini, prototipe ini menggunakan pendekatan pemrosesan data besar berbasis hybrid architecture dengan menggabungkan streaming dan batch processing, serta memanfaatkan teknologi modern seperti Kafka, MinIO, PySpark, Hive Metastore, dan Trino.
-
 ## Arsitektur Sistem
 ![arsitektur](https://github.com/user-attachments/assets/6e0aa796-7cd4-433c-9914-aeca8ebbe616)
 Alur:
@@ -56,6 +39,20 @@ Dataset publik ini berisi lebih dari 6,4 juta ulasan berbahasa Inggris dari peng
 - review_text: Isi ulasan pengguna
 - review_score: Penilaian (positif/negatif)
 - review_votes: Jumlah voting terhadap ulasan tersebut
+
+## Alasan Pemilihan Dataset
+Dataset review Steam dipilih karena:
+
+1. **Relevan dengan Masalah Nyata**  
+   Manipulasi review seperti spam, bot, dan review palsu sering terjadi di Steam, sehingga dataset ini sangat cocok untuk studi deteksi review palsu.
+2. **Volume Data Besar**  
+   Dataset ini berisi jutaan review, sehingga ideal untuk menguji sistem big data dan arsitektur hybrid (streaming + batch).
+3. **Fitur Lengkap**  
+   Terdapat atribut penting seperti teks review, skor, dan jumlah voting, yang sangat mendukung analisis dan pembuatan model deteksi spam/bot.
+4. **Data Publik**  
+   Dataset ini tersedia secara publik, sehingga mudah diakses dan digunakan tanpa kendala lisensi.
+
+Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan menguji sistem deteksi review palsu berbasis big data.
 
 ## Langkah Menjalankan
 1. Jalankan seluruh container
@@ -118,3 +115,33 @@ Dataset publik ini berisi lebih dari 6,4 juta ulasan berbahasa Inggris dari peng
    ![image](https://github.com/user-attachments/assets/74b246a6-1093-40e6-a01e-7d61ebec58d5)
 
 
+8. Masuk ke trino
+   ```
+   docker exec -it trino trino
+   ```
+   Buat schema dan tabel untuk steam_review
+
+   ```sql
+   CREATE SCHEMA IF NOT EXISTS hive.default;
+
+   CREATE TABLE hive.default.steam_review (
+       app_id VARCHAR,
+       app_name VARCHAR,
+       review_text VARCHAR,
+       review_score VARCHAR,
+       review_votes VARCHAR
+   )
+   WITH (
+       external_location = 's3a://lakehouse/clean/ structured/',
+       format = 'CSV',
+       skip_header_line_count = 1
+   );
+   ```
+   ![image](https://github-production-user-asset-6210df.s3.amazonaws.com/79549192/457232685-48d60450-0f9b-4fcb-ad0d-4d902fa9b2fe.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20250620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250620T062515Z&X-Amz-Expires=300&X-Amz-Signature=e2e3017fa1a1499cee0506ceda704b680c0af47f99f7ef6385ab9667ba105e22&X-Amz-SignedHeaders=host)
+
+   Tampilkan 10 baris pertama dari steam_review
+   ```sql
+   SELECT * FROM hive.default.steam_review
+   LIMIT 10;
+   ```
+   ![image](https://github-production-user-asset-6210df.s3.amazonaws.com/79549192/457236578-4220fe9c-8533-4c8a-9557-64f5d0216bf6.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20250620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250620T063502Z&X-Amz-Expires=300&X-Amz-Signature=cfad3a4ad68995ff59426eccc6a297c0861b49e02ed9f8f5ad874f228cb68c9e&X-Amz-SignedHeaders=host)
