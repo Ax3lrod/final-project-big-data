@@ -56,3 +56,41 @@ Dataset publik ini berisi lebih dari 6,4 juta ulasan berbahasa Inggris dari peng
 - review_text: Isi ulasan pengguna
 - review_score: Penilaian (positif/negatif)
 - review_votes: Jumlah voting terhadap ulasan tersebut
+
+## Langkah Menjalankan
+1. Jalankan seluruh container
+   ```
+   docker-compose up -d
+   ```
+   ![Screenshot 2025-06-20 122648](https://github.com/user-attachments/assets/dded2e4c-f8de-4d93-9f2b-f2e39f9d12af)
+2. Buat topik kafka
+   ```
+   docker exec -it kafka bash
+
+   kafka-topics --create \
+        --topic steam_reviews \
+        --bootstrap-server localhost:9092 \
+        --partitions 1 \
+        --replication-factor 1
+   ```
+   ![Screenshot 2025-06-20 123739](https://github.com/user-attachments/assets/4bd078f6-1b4b-4de6-97d7-681454b69925)
+3. Jalankan Kafka Producer
+   ```
+   docker exec -it producer bash
+
+   pip install kafka-python
+  
+   python kafka_producer.py
+   ```
+   ![Screenshot 2025-06-20 123812](https://github.com/user-attachments/assets/14ca9fd0-dd4e-445d-ad9a-623cf567ed0e)
+   ![Screenshot 2025-06-20 124228](https://github.com/user-attachments/assets/260b9ed5-3e44-44c8-9822-8b8be32b7f85)
+3. Jalankan Kafka Consumer
+   ```
+   docker exec -it consumer bash
+
+   pip install kafka-python pandas minio
+  
+   python kafka_consumer.py
+   ```
+   ![Screenshot 2025-06-20 123805](https://github.com/user-attachments/assets/65d5bac5-439d-4c83-ae58-f44650b8c87e)
+   ![Screenshot 2025-06-20 124247](https://github.com/user-attachments/assets/a2f938ec-61a3-4609-8782-1a13cbdb3f7b)
