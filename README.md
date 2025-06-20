@@ -94,3 +94,23 @@ Dataset publik ini berisi lebih dari 6,4 juta ulasan berbahasa Inggris dari peng
    ```
    ![Screenshot 2025-06-20 123805](https://github.com/user-attachments/assets/65d5bac5-439d-4c83-ae58-f44650b8c87e)
    ![Screenshot 2025-06-20 124247](https://github.com/user-attachments/assets/a2f938ec-61a3-4609-8782-1a13cbdb3f7b)
+4. Upload data unstructured ke MinIO
+   ```
+   python upload_unstructured.py
+   ```
+   ![image](https://github.com/user-attachments/assets/9b6d4da1-96d2-4fe8-b048-11880ca98163)
+5. Lihat di UI MinIO untuk mengecek apakah raw data sudah tersimpan
+   ![image](https://github.com/user-attachments/assets/f6359d97-8188-4bf9-89e7-678185ba256b)
+   ![image](https://github.com/user-attachments/assets/972350ea-f25e-462d-9f66-3641905006dd)
+   ![image](https://github.com/user-attachments/assets/b642e89d-9c27-4323-b706-882207e1381a)
+6. Jalankan PySpark untuk preprocessing
+   ```
+   docker exec -it train bash
+
+   pip install minio
+  
+   spark-submit preprocess.py
+   ```
+   ![image](https://github.com/user-attachments/assets/81e0fb24-198a-49eb-8187-4b21d0eb4915)
+   ![image](https://github.com/user-attachments/assets/b0ca0183-4865-4890-aaf4-c9fc4a481bf6)
+7. Lihat di UI MinIO untuk mengecek apakah clean data sudah tersimpan
