@@ -5,6 +5,8 @@ services:
     container_name: zookeeper
     ports:
       - "2181:2181"
+    networks:
+      - trino-net
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -16,6 +18,8 @@ services:
       - "9092:9092"
     depends_on:
       - zookeeper
+    networks:
+      - trino-net
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -23,6 +27,9 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   minio:
+    networks:
+      - trino-net
+    hostname: minio
     image: minio/minio
     container_name: minio
     ports:
@@ -31,8 +38,9 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      AWS_REGION: us-east-1
     command: server /data --console-address ":9001"
 
   producer:
@@ -41,6 +49,8 @@ services:
     volumes:
       - ./producer:/app
     working_dir: /app
+    networks:
+      - trino-net
     tty: true
 
   consumer:
@@ -49,6 +59,8 @@ services:
     volumes:
       - ./consumer:/app
     working_dir: /app
+    networks:
+      - trino-net
     tty: true
 
   train:
@@ -61,8 +73,75 @@ services:
     working_dir: /app
     depends_on:
       - kafka
-      - minio                      
+      - minio                 
+    networks:
+      - trino-net     
     command: tail -f /dev/null
+
+  trino:
+    networks:
+      - trino-net
+    container_name: trino
+    ports:
+      - "8080:8080"
+    image: "trinodb/trino:476"
+    environment:
+      CATALOG_MANAGEMENT: dynamic
+      TRINO_HISTORY_FILE: /etc/trino/history-server/history.text
+    volumes:
+      - ./etc:/etc/trino
+
+  postgres:
+    networks:
+      - trino-net
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: trino-compose
+      POSTGRES_PASSWORD: trino-compose
+      POSTGRES_DB: metastore
+
+  hive-metastore:
+    networks:
+      - trino-net
+    hostname: hive-metastore
+    container_name: hive-metastore
+    image: 'starburstdata/hive:3.1.2-e.18'
+    ports:
+      - '9083:9083' 
+    environment:
+       HIVE_METASTORE_DRIVER: org.postgresql.Driver
+       HIVE_METASTORE_JDBC_URL: jdbc:postgresql://postgres:5432/metastore
+       HIVE_METASTORE_USER: trino-compose
+       HIVE_METASTORE_PASSWORD: trino-compose
+       HIVE_METASTORE_WAREHOUSE_DIR: s3://lakehouse/
+       S3_ENDPOINT: http://minio:9000
+       S3_ACCESS_KEY: minioadmin
+       S3_SECRET_KEY: minioadmin
+       S3_PATH_STYLE_ACCESS: "true"
+       REGION: "us-east-1"
+       GOOGLE_CLOUD_KEY_FILE_PATH: ""
+       AZURE_ADL_CLIENT_ID: ""
+       AZURE_ADL_CREDENTIAL: ""
+       AZURE_ADL_REFRESH_URL: ""
+       AZURE_ABFS_STORAGE_ACCOUNT: ""
+       AZURE_ABFS_ACCESS_KEY: ""
+       AZURE_WASB_STORAGE_ACCOUNT: ""
+       AZURE_ABFS_OAUTH: ""
+       AZURE_ABFS_OAUTH_TOKEN_PROVIDER: ""
+       AZURE_ABFS_OAUTH_CLIENT_ID: ""
+       AZURE_ABFS_OAUTH_SECRET: ""
+       AZURE_ABFS_OAUTH_ENDPOINT: ""
+       AZURE_WASB_ACCESS_KEY: ""
+    depends_on:
+      - postgres
 
 volumes:
   minio_data:
+
+networks:
+  trino-net:
+    driver: bridge
