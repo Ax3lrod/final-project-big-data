@@ -114,3 +114,7 @@ Dataset publik ini berisi lebih dari 6,4 juta ulasan berbahasa Inggris dari peng
    ![image](https://github.com/user-attachments/assets/81e0fb24-198a-49eb-8187-4b21d0eb4915)
    ![image](https://github.com/user-attachments/assets/b0ca0183-4865-4890-aaf4-c9fc4a481bf6)
 7. Lihat di UI MinIO untuk mengecek apakah clean data sudah tersimpan
+   ![image](https://github.com/user-attachments/assets/3c57061b-95f9-4c9a-b27a-95aa90efc7a6)
+   ![image](https://github.com/user-attachments/assets/74b246a6-1093-40e6-a01e-7d61ebec58d5)
+
+
