@@ -145,3 +145,45 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
    LIMIT 10;
    ```
    ![image](https://github.com/user-attachments/assets/4220fe9c-8533-4c8a-9557-64f5d0216bf6)
+
+9. Memulai training model
+
+   Masuk ke container train
+   ```
+   docker exec -it train bash
+   ```
+   Install semua dependencies yang diperlukan
+   ```
+   pip install -r requirements.txt
+   ```
+   ![WhatsApp Image 2025-06-20 at 14 00 08_06dc6227](https://github.com/user-attachments/assets/88bbc4a0-78a9-4d26-9bb9-ac3332df06aa)
+
+   Mulai training.
+   ```
+   spark-submit train.py
+   ```
+   ![WhatsApp Image 2025-06-20 at 14 01 03_ddef6bc0](https://github.com/user-attachments/assets/e196c4ed-d65b-42b7-a92e-a78e48c8476d)
+
+10. Membuat endpoint Fast API
+
+    Di dalam container train. Jalankan command:
+    ```
+    python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    ```
+    ![WhatsApp Image 2025-06-20 at 13 59 18_38582ee3](https://github.com/user-attachments/assets/7ec3c996-cf24-4c48-9a26-1363ba843ab5)
+
+11. Membuat UI Streamlit
+
+    Masuk ke container frontend
+    ```
+    docker exec -it frontend bash
+    ```
+    Install semua dependencies yang diperlukan
+    ```
+    pip install -r requirements.txt
+    ```
+    Nyalakan Streamlit
+    ```
+    streamlit run app.py --server.port=7000 --server.address=0.0.0.0
+    ```
+    
