@@ -137,11 +137,11 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
        skip_header_line_count = 1
    );
    ```
-   ![image](https://github-production-user-asset-6210df.s3.amazonaws.com/79549192/457232685-48d60450-0f9b-4fcb-ad0d-4d902fa9b2fe.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20250620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250620T062515Z&X-Amz-Expires=300&X-Amz-Signature=e2e3017fa1a1499cee0506ceda704b680c0af47f99f7ef6385ab9667ba105e22&X-Amz-SignedHeaders=host)
+   ![image](https://github.com/user-attachments/assets/cc094a52-5811-4788-a840-0790235f4343)
 
    Tampilkan 10 baris pertama dari steam_review
    ```sql
    SELECT * FROM hive.default.steam_review
    LIMIT 10;
    ```
-   ![image](https://github-production-user-asset-6210df.s3.amazonaws.com/79549192/457236578-4220fe9c-8533-4c8a-9557-64f5d0216bf6.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20250620%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250620T063502Z&X-Amz-Expires=300&X-Amz-Signature=cfad3a4ad68995ff59426eccc6a297c0861b49e02ed9f8f5ad874f228cb68c9e&X-Amz-SignedHeaders=host)
+   ![image](https://github.com/user-attachments/assets/4220fe9c-8533-4c8a-9557-64f5d0216bf6)
