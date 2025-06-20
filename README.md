@@ -186,4 +186,5 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
     ```
     streamlit run app.py --server.port=7000 --server.address=0.0.0.0
     ```
-    
+    ![WhatsApp Image 2025-06-20 at 14 38 00_411fbe96](https://github.com/user-attachments/assets/ff5ee111-0bfa-4a78-ad7a-93fbd3c8489e)
+
