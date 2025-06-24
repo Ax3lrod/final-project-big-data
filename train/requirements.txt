@@ -4,3 +4,13 @@ pydantic
 minio
 numpy
 py4j
+pandas
+scikit-learn
+nltk
+spacy
+torch
+transformers[torch]
+matplotlib
+seaborn
+tqdm
+textstat
