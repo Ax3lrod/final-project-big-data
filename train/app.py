@@ -4,6 +4,8 @@ import warnings
 from datetime import datetime
 from typing import List, Optional, Dict
 from collections import Counter
+import math
+import io
 
 import torch
 import torch.nn as nn
@@ -13,7 +15,7 @@ import pandas as pd
 import re
 import string
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel, Field
 from transformers import AutoTokenizer, AutoModel
 import nltk
@@ -22,6 +24,11 @@ from nltk.corpus import stopwords
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sklearn.preprocessing import StandardScaler
 import textstat
+from trino.dbapi import connect
+import minio
+from minio import Minio
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
 # Buat direktori jika belum ada
@@ -44,6 +51,12 @@ warnings.filterwarnings('ignore')
 # --- 1. Definisi Kelas dari Notebook Training ---
 # Kelas-kelas ini direplikasi persis seperti di notebook untuk memastikan
 # arsitektur model dan logika ekstraksi fitur konsisten.
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000", # Origin dari Next.js development server
+    # "https://your-production-frontend.com", # Tambahkan domain frontend produksi Anda di sini
+]
 
 class AdvancedFeatureExtractor:
     def __init__(self):
@@ -130,6 +143,13 @@ CONFIG_PATH = os.path.join(ARTIFACTS_PATH, "config.json")
 MODEL_WEIGHTS_PATH = os.path.join(ARTIFACTS_PATH, "spam_model_weights.pth")
 TOKENIZER_PATH = os.path.join(ARTIFACTS_PATH, "spam_tokenizer")
 SCALER_PARAMS_PATH = os.path.join(ARTIFACTS_PATH, "scaler_params.npz")
+TRINO_HOST, TRINO_PORT, TRINO_USER = "trino", 8080, "user"
+MINIO_PUBLIC_URL = "http://localhost:9000"
+MINIO_ENDPOINT = "localhost:9000"
+MINIO_ACCESS_KEY = "minioadmin"
+MINIO_SECRET_KEY = "minioadmin"
+BUCKET_NAME = "lakehouse"
+VALIDATED_CSV_PATH = "clean/structured/steam_reviews_validated/steam_reviews_validated.csv"
 artifacts = {}
 
 # --- 3. Pydantic Models ---
@@ -155,8 +175,67 @@ class BatchPredictionResponse(BaseModel):
     predictions: List[SpamPrediction]
     summary: BatchSummary
 
+# Pydantic Model Baru untuk Halaman Utama
+class GameInfo(BaseModel):
+    app_id: str; app_name: str; poster_url: str; review_count: int
+class PaginationInfo(BaseModel):
+    total_items: int; total_pages: int; current_page: int; limit: int
+class PaginatedGamesResponse(BaseModel):
+    pagination: PaginationInfo; data: List[GameInfo]
+# Pydantic Model Baru untuk Detail Game
+class ReviewInfo(BaseModel):
+    review_text: str; review_score: str; is_spam: bool; spam_score: float
+class PaginatedReviewsResponse(BaseModel):
+    pagination: PaginationInfo; data: List[ReviewInfo]
+
+class NewReviewRequest(BaseModel):
+    app_id: str = Field(..., example="730")
+    app_name: str = Field(..., example="Counter-Strike: Global Offensive")
+    review_text: str = Field(..., min_length=1)
+    review_score: str = Field(..., example="1")
+    review_votes: str = Field(..., example="0")
+
+class NewReviewResponse(BaseModel):
+    message: str
+    data_written: Dict
+
+minio_client = Minio(MINIO_ENDPOINT, access_key=MINIO_ACCESS_KEY, secret_key=MINIO_SECRET_KEY, secure=False)
+
 # --- 4. Aplikasi FastAPI & Fungsi Helper ---
 app = FastAPI(title="Advanced Spam Detection API", version="5.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins, # Izinkan origin yang ada di daftar
+    allow_credentials=True, # Izinkan cookies (jika diperlukan)
+    allow_methods=["*"],    # Izinkan semua metode (GET, POST, dll.)
+    allow_headers=["*"],    # Izinkan semua header
+)
+
+def append_to_csv_in_minio(bucket: str, object_path: str, new_data_df: pd.DataFrame):
+    """
+    Mengunduh CSV, menambahkan data, dan meng-upload kembali.
+    Ini adalah operasi atomik yang 'mahal' jika file besar.
+    """
+    try:
+        response = minio_client.get_object(bucket, object_path)
+        existing_data = response.read()
+        existing_df = pd.read_csv(io.BytesIO(existing_data))
+        combined_df = pd.concat([existing_df, new_data_df], ignore_index=True)
+    except Exception:
+        print(f"File '{object_path}' tidak ditemukan. Membuat file baru.")
+        combined_df = new_data_df
+    finally:
+        if 'response' in locals(): response.close(); response.release_conn()
+
+    csv_bytes = combined_df.to_csv(index=False).encode('utf-8')
+    csv_buffer = io.BytesIO(csv_bytes)
+
+    minio_client.put_object(
+        bucket, object_path, data=csv_buffer,
+        length=len(csv_bytes), content_type='application/csv'
+    )
+    print(f"Berhasil meng-update '{object_path}' dengan total {len(combined_df)} baris.")
 
 def get_confidence(score: float) -> str:
     distance = abs(score - 0.5)
@@ -246,6 +325,196 @@ def predict_batch(request: BatchReviewRequest):
     total = len(results)
     summary = BatchSummary(total_reviews_processed=total, spam_count=spam_count, legit_count=total-spam_count, spam_percentage=(spam_count/total*100 if total>0 else 0), average_spam_score=(total_score/total if total>0 else 0))
     return BatchPredictionResponse(predictions=results, summary=summary)
+
+@app.get("/images/posters/{app_id}.jpg",
+         tags=["Image Proxy"],
+         responses={
+             200: {"content": {"image/jpeg": {}}},
+             404: {"description": "Image not found"}
+         })
+def get_game_poster(app_id: str):
+    """
+    Bertindak sebagai proxy aman untuk mengambil gambar poster dari MinIO.
+    Ini memungkinkan bucket MinIO tetap privat.
+    """
+    object_name = f"raw/unstructured/top_50_popular_posters_archive/{app_id}.jpg"
+    
+    try:
+        # Gunakan klien MinIO internal untuk mengambil objek
+        response = minio_client.get_object(BUCKET_NAME, object_name)
+        
+        # Alirkan konten gambar langsung ke klien
+        # Ini lebih efisien memori daripada memuat seluruh file
+        return StreamingResponse(response, media_type="image/jpeg")
+
+    except Exception as e:
+        # Tangani jika file tidak ditemukan atau error lain
+        print(f"Error fetching image {object_name} from MinIO: {e}")
+        # Kembalikan gambar placeholder atau error 404
+        # Untuk kesederhanaan, kita kembalikan 404
+        raise HTTPException(status_code=404, detail="Image not found")
+
+@app.get("/games", response_model=PaginatedGamesResponse, tags=["Frontend Data"])
+def get_all_games(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    """
+    Mengambil daftar game unik dengan pagination untuk ditampilkan di halaman utama.
+    """
+    conn = None
+    try:
+        conn = connect(host=TRINO_HOST, port=TRINO_PORT, user=TRINO_USER)
+        cur = conn.cursor()
+        
+        # Query 1: Hitung total game unik untuk metadata pagination
+        cur.execute("SELECT COUNT(DISTINCT app_id) FROM hive.default.steam_reviews_validated")
+        total_items = cur.fetchone()[0]
+        total_pages = math.ceil(total_items / limit)
+        offset = (page - 1) * limit
+        
+        # Query 2: Ambil data game untuk halaman saat ini
+        query = f"""
+            SELECT
+                app_id,
+                any_value(app_name) as app_name,
+                COUNT(*) as review_count
+            FROM
+                hive.default.steam_reviews_validated
+            GROUP BY
+                app_id
+            ORDER BY
+                review_count DESC
+            OFFSET {offset}
+            LIMIT {limit}
+        """
+        cur.execute(query)
+        rows = cur.fetchall()
+        
+        game_data = [
+            GameInfo(
+                app_id=row[0],
+                app_name=row[1],
+                poster_url=f"/images/posters/{row[0]}.jpg",
+                review_count=row[2]
+            ) for row in rows
+        ]
+
+        pagination_info = PaginationInfo(
+            total_items=total_items, total_pages=total_pages,
+            current_page=page, limit=limit
+        )
+        
+        return PaginatedGamesResponse(pagination=pagination_info, data=game_data)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Trino query failed: {e}")
+    finally:
+        if conn: conn.close()
+
+
+@app.get("/games/{app_id}/reviews", response_model=PaginatedReviewsResponse, tags=["Frontend Data"])
+def get_reviews_for_game(app_id: str, page: int = Query(1, ge=1), limit: int = Query(10, ge=1, le=50)):
+    """
+    Mengambil semua ulasan untuk satu game spesifik, dengan pagination.
+    """
+    conn = None
+    try:
+        conn = connect(host=TRINO_HOST, port=TRINO_PORT, user=TRINO_USER)
+        cur = conn.cursor()
+        
+        # Query 1: Hitung total review untuk game ini
+        cur.execute(f"SELECT COUNT(*) FROM hive.default.steam_reviews_validated WHERE app_id = '{app_id}'")
+        total_items = cur.fetchone()[0]
+        if total_items == 0:
+            raise HTTPException(status_code=404, detail=f"Game with app_id '{app_id}' not found.")
+        
+        total_pages = math.ceil(total_items / limit)
+        offset = (page - 1) * limit
+        
+        # Query 2: Ambil data review untuk halaman saat ini
+        query = f"""
+            SELECT
+                review_text,
+                review_score,
+                CAST(pred_is_spam AS BOOLEAN) AS is_spam,
+                CAST(pred_spam_score AS DOUBLE) AS spam_score
+            FROM
+                hive.default.steam_reviews_validated
+            WHERE
+                app_id = '{app_id}'
+            ORDER BY
+                pred_spam_score DESC
+            OFFSET {offset}
+            LIMIT {limit}
+        """
+        cur.execute(query)
+        rows = cur.fetchall()
+        
+        review_data = [
+            ReviewInfo(
+                review_text=row[0], review_score=row[1],
+                is_spam=row[2], spam_score=row[3]
+            ) for row in rows
+        ]
+        
+        pagination_info = PaginationInfo(
+            total_items=total_items, total_pages=total_pages,
+            current_page=page, limit=limit
+        )
+        
+        return PaginatedReviewsResponse(pagination=pagination_info, data=review_data)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Trino query failed: {e}")
+    finally:
+        if conn: conn.close()
+
+@app.post("/reviews", response_model=NewReviewResponse, status_code=201, tags=["Real-time Ingestion"])
+def post_and_save_review(request: NewReviewRequest, background_tasks: BackgroundTasks):
+    """
+    Menerima ulasan baru, melakukan prediksi, dan langsung menambahkan
+    hasilnya ke file CSV di MinIO yang dibaca oleh Trino.
+    """
+    if not artifacts:
+        raise HTTPException(status_code=503, detail="Model ML tidak siap.")
+
+    # 1. Lakukan prediksi
+    try:
+        prediction_result = perform_prediction(request.review_text)
+        score = prediction_result['score']
+        features = prediction_result['features']
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal melakukan prediksi: {e}")
+
+    # 2. Siapkan data lengkap yang akan ditambahkan
+    enriched_data = {
+        "app_id": request.app_id,
+        "app_name": request.app_name,
+        "review_text": request.review_text,
+        "review_score": request.review_score,
+        "review_votes": request.review_votes,
+        "pred_is_spam": score > artifacts['config'].get('prediction_threshold', 0.5),
+        "pred_spam_score": score,
+        "pred_confidence": get_confidence(score),
+        "pred_explanation": get_spam_explanation(features, score),
+        "pred_features": json.dumps(features)
+    }
+    
+    # 3. Buat DataFrame dari data baru
+    new_data_df = pd.DataFrame([enriched_data])
+
+    # 4. Jalankan operasi I/O yang lambat di background
+    # Ini membuat endpoint merespons dengan cepat kepada pengguna
+    # sementara proses penulisan ke MinIO terjadi di belakang layar.
+    background_tasks.add_task(
+        append_to_csv_in_minio,
+        BUCKET_NAME,
+        VALIDATED_CSV_PATH,
+        new_data_df
+    )
+    
+    return NewReviewResponse(
+        message="Review received and scheduled for saving.",
+        data_written=enriched_data
+    )
 
 # --- Jalankan server ---
 if __name__ == "__main__":
