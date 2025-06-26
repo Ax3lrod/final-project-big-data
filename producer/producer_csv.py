@@ -15,5 +15,5 @@ with open('dataset.csv', 'r', encoding='utf-8') as f:
         producer.send('steam-reviews', value=row)
         print(f"Sent: {row}")
         time.sleep(0.2)
-
+        
 producer.flush()

@@ -339,7 +339,7 @@ def get_game_poster(app_id: str):
     Bertindak sebagai proxy aman untuk mengambil gambar poster dari MinIO.
     Ini memungkinkan bucket MinIO tetap privat.
     """
-    object_name = f"raw/unstructured/top_50_popular_posters_archive/{app_id}.jpg"
+    object_name = f"raw/unstructured/steam_images/{app_id}.jpg"
     
     try:
         # Gunakan klien MinIO internal untuk mengambil objek

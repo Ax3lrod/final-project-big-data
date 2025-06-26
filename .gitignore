@@ -1,6 +1,4 @@
 data/
 venv/
-train/spam_detection_pipeline_final/*
 train/artifacts/*
-train/enrichment/*
 train/nltk-data/*
