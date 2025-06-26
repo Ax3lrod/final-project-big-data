@@ -104,7 +104,7 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
    ```
    docker exec -it train bash
 
-   pip install minio
+   pip install -r requirements.txt # install semua dependencies untuk container train
   
    spark-submit preprocess.py
    ```
@@ -113,78 +113,62 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
 7. Lihat di UI MinIO untuk mengecek apakah clean data sudah tersimpan
    ![image](https://github.com/user-attachments/assets/3c57061b-95f9-4c9a-b27a-95aa90efc7a6)
    ![image](https://github.com/user-attachments/assets/74b246a6-1093-40e6-a01e-7d61ebec58d5)
+8. Jalankan script enrichment untuk membuat prediksi pada dataset.
+   Pertama masuk ke container train.
+   ```
+   docker exec -it train bash
+   ```
+   Jalankan script enrichment.
+   ```
+   python enrich_reviews.py
+   ```
+   Script enrichment akan mengambil dataset yang sudah melalui pre-processing dan melakukan inference terhadap dataset tersebut. Hasilnya adalah dataset baru dengan kolom-kolom yang berisi hasil prediksi dari model. Dataset yang baru akan diunggah kembali ke minio.
+   ![Screenshot 2025-06-26 000704](https://github.com/user-attachments/assets/57635e9d-8b0e-4df6-a14a-6c2da2f6a999)
 
-
-8. Masuk ke trino
+10. Masuk ke trino
    ```
    docker exec -it trino trino
    ```
-   Buat schema dan tabel untuk steam_review
+   Buat schema dan tabel untuk dataset yang sudah melalui tahap enrichment.
 
    ```sql
    CREATE SCHEMA IF NOT EXISTS hive.default;
 
-   CREATE TABLE hive.default.steam_review (
-       app_id VARCHAR,
-       app_name VARCHAR,
-       review_text VARCHAR,
-       review_score VARCHAR,
-       review_votes VARCHAR
-   )
-   WITH (
-       external_location = 's3a://lakehouse/clean/ structured/',
-       format = 'CSV',
-       skip_header_line_count = 1
-   );
+    CREATE TABLE hive.default.steam_reviews_validated (
+        app_id VARCHAR,
+        app_name VARCHAR,
+        review_text VARCHAR,
+        review_score VARCHAR,
+        review_votes VARCHAR,
+        pred_is_spam BOOLEAN,
+        pred_spam_score DOUBLE,
+        pred_confidence VARCHAR,
+        pred_explanation VARCHAR,
+        pred_features VARCHAR
+    )
+    WITH (
+        external_location = 's3a://lakehouse/clean/structured/steam_reviews_validated.csv',
+        format = 'CSV',
+        csv_escape = '"',
+        csv_quote = '"',
+        csv_separator = ',',
+        skip_header_line_count = 1
+    );
    ```
-   ![image](https://github.com/user-attachments/assets/cc094a52-5811-4788-a840-0790235f4343)
+   ![Screenshot 2025-06-26 002155](https://github.com/user-attachments/assets/906b87db-6757-4830-add7-8d2df3ab1857)
 
-   Tampilkan 10 baris pertama dari steam_review
+   Untuk memeriksa hasilnya, kita bisa menampilkan 10 baris pertama dengan command berikut:
    ```sql
    SELECT * FROM hive.default.steam_review
    LIMIT 10;
    ```
-   ![image](https://github.com/user-attachments/assets/4220fe9c-8533-4c8a-9557-64f5d0216bf6)
+   ![Screenshot 2025-06-26 002441](https://github.com/user-attachments/assets/ef2bc99e-b1cb-4599-abbd-de4d3bdb2bf1)
 
-9. Memulai training model
 
-   Masuk ke container train
-   ```
-   docker exec -it train bash
-   ```
-   Install semua dependencies yang diperlukan
-   ```
-   pip install -r requirements.txt
-   ```
-   ![WhatsApp Image 2025-06-20 at 14 00 08_06dc6227](https://github.com/user-attachments/assets/88bbc4a0-78a9-4d26-9bb9-ac3332df06aa)
-
-   Mulai training.
-   ```
-   spark-submit train.py
-   ```
-   ![WhatsApp Image 2025-06-20 at 14 01 03_ddef6bc0](https://github.com/user-attachments/assets/e196c4ed-d65b-42b7-a92e-a78e48c8476d)
-
-10. Membuat endpoint Fast API
+11. Membuat endpoint Fast API
 
     Di dalam container train. Jalankan command:
     ```
     python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
     ```
     ![WhatsApp Image 2025-06-20 at 13 59 18_38582ee3](https://github.com/user-attachments/assets/7ec3c996-cf24-4c48-9a26-1363ba843ab5)
-
-11. Membuat UI Streamlit
-
-    Masuk ke container frontend
-    ```
-    docker exec -it frontend bash
-    ```
-    Install semua dependencies yang diperlukan
-    ```
-    pip install -r requirements.txt
-    ```
-    Nyalakan Streamlit
-    ```
-    streamlit run app.py --server.port=7000 --server.address=0.0.0.0
-    ```
-    ![WhatsApp Image 2025-06-20 at 14 38 00_411fbe96](https://github.com/user-attachments/assets/ff5ee111-0bfa-4a78-ad7a-93fbd3c8489e)
-
