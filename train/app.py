@@ -1,4 +1,5 @@
 import os
+os.environ["HF_HOME"] = "/app/.cache/huggingface"
 import json
 import warnings
 from datetime import datetime
@@ -14,6 +15,7 @@ import numpy as np
 import pandas as pd
 import re
 import string
+import uvicorn
 
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel, Field
@@ -144,8 +146,8 @@ MODEL_WEIGHTS_PATH = os.path.join(ARTIFACTS_PATH, "spam_model_weights.pth")
 TOKENIZER_PATH = os.path.join(ARTIFACTS_PATH, "spam_tokenizer")
 SCALER_PARAMS_PATH = os.path.join(ARTIFACTS_PATH, "scaler_params.npz")
 TRINO_HOST, TRINO_PORT, TRINO_USER = "trino", 8080, "user"
-MINIO_PUBLIC_URL = "http://localhost:9000"
-MINIO_ENDPOINT = "localhost:9000"
+MINIO_PUBLIC_URL = "http://minio:9000"
+MINIO_ENDPOINT = "minio:9000"
 MINIO_ACCESS_KEY = "minioadmin"
 MINIO_SECRET_KEY = "minioadmin"
 BUCKET_NAME = "lakehouse"
