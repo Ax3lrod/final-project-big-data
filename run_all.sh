@@ -56,27 +56,13 @@ docker exec -d producer sh -c "pip install -q kafka-python && python producer_cs
 log "Menjalankan Consumer CSV..."
 docker exec consumer sh -c "pip install -q kafka-python pandas minio && python consumer_csv.py"
 
-if [ $? -ne 0 ]; then
-    log_error "Gagal ingestion data CSV."
-    exit 1
-else
-    log "Data CSV berhasil diupload ke MinIO."
-fi
-
 # --- 4. Jalankan Producer & Consumer untuk Gambar ---
 log "Langkah 4: Ingestion data unstructured (gambar)..."
 
 docker exec -d producer sh -c "python producer_img.py"
 
 log "Menjalankan Consumer Gambar..."
-docker exec consumer sh -c "python consumer_img.py"
-
-if [ $? -ne 0 ]; then
-    log_error "Gagal ingestion data gambar."
-    exit 1
-else
-    log "Data gambar berhasil diupload ke MinIO."
-fi
+docker exec consumer sh -c "python consumer_img.py" >/dev/null 2>&1 &
 
 # --- 5. Preprocessing ---
 log "Langkah 5: Preprocessing dengan PySpark..."
@@ -137,6 +123,8 @@ fi
 # --- 8. Menjalankan Inference API ---
 log "Langkah 8: Menjalankan API inference..."
 
-docker exec -d train sh -c "uvicorn api:app --host 0.0.0.0 --port 8000"
+docker exec train sh -c "pip install trino"
+
+docker exec train sh -c "python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload"
 
 log "Pipeline selesai dijalankan!"

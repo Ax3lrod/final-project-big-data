@@ -109,7 +109,7 @@ class EnhancedBERTClassifier(nn.Module):
 
 # --- 2. Konfigurasi ---
 MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY = "minio:9000", "minioadmin", "minioadmin"
-BUCKET_NAME, INPUT_OBJECT_PATH, OUTPUT_OBJECT_PATH = "lakehouse", "clean/structured/steam_reviews.csv", "clean/structured/steam_reviews_validated.csv"
+BUCKET_NAME, INPUT_OBJECT_PATH, OUTPUT_OBJECT_PATH = "lakehouse", "clean/structured/steam_reviews.csv", "clean/structured/steam_reviews_validated/steam_reviews_validated.csv"
 ARTIFACTS_PATH, CONFIG_PATH = "artifacts", os.path.join("artifacts", "config.json")
 MODEL_WEIGHTS_PATH, TOKENIZER_PATH, SCALER_PARAMS_PATH = os.path.join(ARTIFACTS_PATH, "spam_model_weights.pth"), os.path.join(ARTIFACTS_PATH, "spam_tokenizer"), os.path.join(ARTIFACTS_PATH, "scaler_params.npz")
 
