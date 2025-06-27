@@ -69,37 +69,42 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
         --bootstrap-server localhost:9092 \
         --partitions 1 \
         --replication-factor 1
+
+   kafka-topics --create \
+    --topic steam-posters-images \
+    --bootstrap-server localhost:9092 \
+    --partitions 1 \
+    --replication-factor 1
    ```
-   ![Screenshot 2025-06-20 123739](https://github.com/user-attachments/assets/4bd078f6-1b4b-4de6-97d7-681454b69925)
+   ![image](https://github.com/user-attachments/assets/12376470-268d-427d-a18f-9c6a47837d54)
 3. Jalankan Kafka Producer
    ```
    docker exec -it producer bash
 
    pip install kafka-python
   
-   python kafka_producer.py
+   python producer_csv.py
+   python producer_img.py
    ```
    ![Screenshot 2025-06-20 123812](https://github.com/user-attachments/assets/14ca9fd0-dd4e-445d-ad9a-623cf567ed0e)
-   ![Screenshot 2025-06-20 124228](https://github.com/user-attachments/assets/260b9ed5-3e44-44c8-9822-8b8be32b7f85)
+   ![image](https://github.com/user-attachments/assets/37c2c6ef-9ccd-49ce-83e0-c3c0ba6bc7aa)
+   ![image](https://github.com/user-attachments/assets/148c15e9-212e-4fc3-9d8f-38d67e5edb52)
 3. Jalankan Kafka Consumer
    ```
    docker exec -it consumer bash
 
    pip install kafka-python pandas minio
   
-   python kafka_consumer.py
+   python consumer_csv.py
+   python consumer_img.py
    ```
    ![Screenshot 2025-06-20 123805](https://github.com/user-attachments/assets/65d5bac5-439d-4c83-ae58-f44650b8c87e)
    ![Screenshot 2025-06-20 124247](https://github.com/user-attachments/assets/a2f938ec-61a3-4609-8782-1a13cbdb3f7b)
-4. Upload data unstructured ke MinIO
-   ```
-   python upload_unstructured.py
-   ```
-   ![image](https://github.com/user-attachments/assets/9b6d4da1-96d2-4fe8-b048-11880ca98163)
+   ![image](https://github.com/user-attachments/assets/1746ba58-7c83-4f65-9bca-2301fd8c9d26)
 5. Lihat di UI MinIO untuk mengecek apakah raw data sudah tersimpan
    ![image](https://github.com/user-attachments/assets/f6359d97-8188-4bf9-89e7-678185ba256b)
    ![image](https://github.com/user-attachments/assets/972350ea-f25e-462d-9f66-3641905006dd)
-   ![image](https://github.com/user-attachments/assets/b642e89d-9c27-4323-b706-882207e1381a)
+   ![image](https://github.com/user-attachments/assets/149b519f-4a90-4fcc-8608-168d779b87ef)
 6. Jalankan PySpark untuk preprocessing
    ```
    docker exec -it train bash
