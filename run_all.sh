@@ -91,10 +91,9 @@ else
     log "Preprocessing selesai."
 fi
 
-# --- 6. Enrichment ---
-log "Langkah 6: Enrichment hasil review..."
-
-docker exec -d train sh -c "python enrich_reviews.py"
+# --- 6. Enrichment Data ---
+log "Langkah 6: Enrichment data dengan model spam detection..."
+docker exec -u 0 train sh -c "python enrich_reviews.py"
 
 if [ $? -ne 0 ]; then
     log_error "Gagal enrichment data."
@@ -113,8 +112,8 @@ CREATE TABLE IF NOT EXISTS hive.default.steam_reviews_validated (
     review_text VARCHAR,
     review_score VARCHAR,
     review_votes VARCHAR,
-    pred_is_spam BOOLEAN,
-    pred_spam_score DOUBLE,
+    pred_is_spam VARCHAR,
+    pred_spam_score VARCHAR,
     pred_confidence VARCHAR,
     pred_explanation VARCHAR,
     pred_features VARCHAR
@@ -141,4 +140,3 @@ log "Langkah 8: Menjalankan API inference..."
 docker exec -d train sh -c "uvicorn api:app --host 0.0.0.0 --port 8000"
 
 log "Pipeline selesai dijalankan!"
-
