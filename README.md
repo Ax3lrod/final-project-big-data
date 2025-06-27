@@ -251,4 +251,6 @@ python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
 ## 📊 Tampilan UI Dashboard
 
+Repository Front-end: https://github.com/Ax3lrod/fp-big-data-frontend
+
 ![WhatsApp Image 2025-06-27 at 00 33 51](https://github.com/user-attachments/assets/e6c7bce3-8fc4-4c52-a767-ded6e6202901)
