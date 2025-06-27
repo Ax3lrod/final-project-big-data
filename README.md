@@ -260,5 +260,12 @@ Seluruh pipeline dapat dijalankan secara otomatis menggunakan script yang bernam
 ## 📊 Tampilan UI Dashboard
 
 Repository Front-end: https://github.com/Ax3lrod/fp-big-data-frontend
-
 ![WhatsApp Image 2025-06-27 at 00 33 51](https://github.com/user-attachments/assets/e6c7bce3-8fc4-4c52-a767-ded6e6202901)
+![image](https://github.com/user-attachments/assets/070a0fe9-07ae-4692-a4b6-6fcccec76222)
+![image](https://github.com/user-attachments/assets/d38b124c-e9a7-42d2-ba26-4a37dd91321a)
+![image](https://github.com/user-attachments/assets/778ac108-c288-4138-8725-23b4739233b9)
+![Screenshot 2025-06-27 200245](https://github.com/user-attachments/assets/7f7903e6-8b51-4d0b-987c-b6ea4ec8dca5)
+![image](https://github.com/user-attachments/assets/94d39c4e-c291-4889-be18-799aac65b9a5)
+
+
+
