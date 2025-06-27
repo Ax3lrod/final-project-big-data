@@ -216,7 +216,7 @@ CREATE TABLE hive.default.steam_reviews_validated (
     pred_features VARCHAR
 )
 WITH (
-    external_location = 's3a://lakehouse/clean/structured/steam_reviews_validated.csv',
+    external_location = 's3a://lakehouse/clean/structured/steam_reviews_validated/',
     format = 'CSV',
     csv_escape = '"',
     csv_quote = '"',
