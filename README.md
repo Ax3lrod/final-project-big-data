@@ -118,7 +118,34 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
 7. Lihat di UI MinIO untuk mengecek apakah clean data sudah tersimpan
    ![image](https://github.com/user-attachments/assets/3c57061b-95f9-4c9a-b27a-95aa90efc7a6)
    ![image](https://github.com/user-attachments/assets/74b246a6-1093-40e6-a01e-7d61ebec58d5)
-8. Jalankan script enrichment untuk membuat prediksi pada dataset.
+8. Lakukan training model di Kaggle
+
+Untuk mengatasi ketiadaan label "spam" pada dataset, kami merancang sebuah pipeline *machine learning* dua tahap yang canggih untuk memastikan deteksi yang akurat dan andal.
+
+**Fase 1: Pembuatan Label dengan Deteksi Anomali**
+
+Kami tidak menggunakan aturan sederhana. Sebaliknya, kami membangun sebuah sistem untuk menemukan ulasan yang paling "mencurigakan" secara otomatis.
+- **Ekstraksi Fitur Multi-Modal**: Kami mengubah setiap ulasan menjadi representasi data yang kaya dengan mengekstrak tiga jenis fitur: fitur linguistik (gaya penulisan), fitur TF-IDF (kata kunci penting), dan *sentence embeddings* (makna semantik).
+- **Ensemble Anomaly Detection**: Kami menggunakan kombinasi model *unsupervised* seperti Isolation Forest dan K-Means clustering pada fitur-fitur ini. Tujuannya adalah untuk mengidentifikasi ulasan yang merupakan *outlier* atau anomali, yang kemungkinan besar adalah spam atau bot.
+- **Pelabelan Cerdas**: Ulasan yang terdeteksi sebagai anomali dan juga cocok dengan pola spam umum (seperti sangat pendek atau penuh pengulangan) kami beri label sebagai **spam (1)**. Sisanya kami beri label sebagai **bukan spam (0)**.
+
+**Fase 2: Training Model Klasifikasi Hybrid**
+
+Setelah mendapatkan label yang andal, kami melatih `EnhancedBERTClassifier`, sebuah model deep learning yang dirancang khusus untuk tugas ini. Cara kerjanya:
+1.  **Input Ganda**: Model menerima dua input untuk setiap ulasan: teks mentah dan fitur-fitur linguistik yang telah kami rekayasa.
+2.  **Pemahaman Kontekstual**: Teks mentah diproses oleh **BERT** untuk mendapatkan pemahaman mendalam tentang makna dan sentimennya.
+3.  **Analisis Gaya**: Fitur-fitur linguistik memberikan sinyal tentang gaya penulisan yang mencurigakan.
+4.  **Prediksi Akhir**: Model kami menggabungkan pemahaman makna dari BERT dengan analisis gaya penulisan, lalu memasukkannya ke dalam jaringan saraf tiruan untuk menghasilkan **skor probabilitas spam** yang akurat antara 0 dan 1.
+
+Pendekatan hybrid ini memungkinkan kami untuk mendeteksi spam dengan lebih efektif daripada hanya mengandalkan analisis teks saja.
+
+![image](https://github.com/user-attachments/assets/ad6ad325-5795-4b8e-9bda-93eb72516104)
+
+Artifact model akhir kemudian akan disimpan untuk tahap enrichment dan deployment API.
+
+10. Jalankan script enrichment untuk membuat prediksi pada dataset.
+
+  > Sebelumnya pastikan semua artifacts model sudah tersimpan di folder `/artifact` dan folder tersebut sudah berada di folder train.
    Pertama masuk ke container train.
    ```
    docker exec -it train bash
@@ -130,7 +157,7 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
    Script enrichment akan mengambil dataset yang sudah melalui pre-processing dan melakukan inference terhadap dataset tersebut. Hasilnya adalah dataset baru dengan kolom-kolom yang berisi hasil prediksi dari model. Dataset yang baru akan diunggah kembali ke minio.
    ![Screenshot 2025-06-26 000704](https://github.com/user-attachments/assets/57635e9d-8b0e-4df6-a14a-6c2da2f6a999)
 
-10. Masuk ke trino
+11. Masuk ke trino
    ```
    docker exec -it trino trino
    ```
@@ -145,8 +172,8 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
         review_text VARCHAR,
         review_score VARCHAR,
         review_votes VARCHAR,
-        pred_is_spam BOOLEAN,
-        pred_spam_score DOUBLE,
+        pred_is_spam VARCHAR,
+        pred_spam_score VARCHAR,
         pred_confidence VARCHAR,
         pred_explanation VARCHAR,
         pred_features VARCHAR
@@ -178,7 +205,8 @@ Dengan alasan-alasan tersebut, dataset ini sangat sesuai untuk membangun dan men
     ```
     ![WhatsApp Image 2025-06-20 at 13 59 18_38582ee3](https://github.com/user-attachments/assets/7ec3c996-cf24-4c48-9a26-1363ba843ab5)
 
+    Setelah tahap ini berhasil, kita dapat mengakses dataset dan model menggunakan API.
+
 
 # Tampilan UI
   ![WhatsApp Image 2025-06-27 at 00 33 51](https://github.com/user-attachments/assets/e6c7bce3-8fc4-4c52-a767-ded6e6202901)
-
