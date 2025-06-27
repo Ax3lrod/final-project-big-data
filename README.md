@@ -249,6 +249,14 @@ python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
 > API siap digunakan untuk akses data dan model.
 
+## Proses Otomasi 
+Seluruh pipeline dapat dijalankan secara otomatis menggunakan script yang bernama run_all.sh di root folder project.
+![WhatsApp Image 2025-06-27 at 18 29 01](https://github.com/user-attachments/assets/50ebf39b-b2f9-4691-ac21-df03a5d609ac)
+![WhatsApp Image 2025-06-27 at 18 29 09](https://github.com/user-attachments/assets/302e69a5-a362-482b-9d3c-f9e5131fd756)
+![WhatsApp Image 2025-06-27 at 18 50 28](https://github.com/user-attachments/assets/428306e0-73a7-405b-b5ec-7acdc5df1bcc)
+![WhatsApp Image 2025-06-27 at 18 56 31](https://github.com/user-attachments/assets/8cb19e65-f5b5-4edd-ab7a-4cd4194548df)
+
+
 ## 📊 Tampilan UI Dashboard
 
 Repository Front-end: https://github.com/Ax3lrod/fp-big-data-frontend
